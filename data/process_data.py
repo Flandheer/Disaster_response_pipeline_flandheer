@@ -1,4 +1,5 @@
-import os
+import sys
+from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
@@ -11,10 +12,10 @@ def load_data(messages_filepath, categories_filepath):
     :return: single dataframe with messages and categories
     '''
 
-    #import libraries
+    # import libraries
     import pandas as pd
 
-    #import dataset
+    # import dataset
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
 
@@ -37,6 +38,7 @@ def load_data(messages_filepath, categories_filepath):
 
     return df
 
+
 def clean_data(df):
     '''
     Clean data by removing duplicates
@@ -48,36 +50,59 @@ def clean_data(df):
 
     df = df.drop_duplicates()
     df = df.dropna(subset=['request'])
+
     return df
 
 
 def save_data(df, database_filename):
-    from sqlalchemy import create_engine
-    import config
+    '''
 
-    os.listdir()
-    db_connection = 'mysql+pymysql://{}:{}@Localhost/disasterresponse'.format(config.db_username,config.db_password)
-    db_disaster_response = create_engine(db_connection)
-    df.to_sql(database_filename, con=db_disaster_response, if_exists='replace', index=False)
+    :param df: Dataframe to store in a database
+    :param database_filename: reference to use for database name
+    :return: sqlite database with cleaned data
+    '''
+
+    # Create engine for a connection with sqlite database
+    db_disaster_response = create_engine('sqlite:///{}'.format(database_filename))
+
+    # Store dataframe as sqlite database in
+    df.to_sql('Messages', db_disaster_response, index=False, if_exists='replace')
 
     return None
 
+
 def main():
+    '''
+    Main code to run ETL module. To run the following arguments should be given
+        disaster_messages.csv disaster_categories.csv DisasterResponse.db
+    Add tot parameters in your IDE or in your command line following
+        python3 process_data.py
+    :return: Cleaned data stored in a sqlite database
+    '''
 
-    messages_filepath, categories_filepath, database_filepath = ['disaster_messages.csv', 'disaster_categories.csv', 'disasterresponse']
+    if len(sys.argv) == 4:  # Arguments are stored in parameters of text editor
 
-    print('Loading data...\n    MESSAGES: {}\n    CATEGORIES: {}'
-          .format(messages_filepath, categories_filepath))
-    df = load_data(messages_filepath, categories_filepath)
+        messages_filepath, categories_filepath, database_filepath = sys.argv[1:]
 
-    print('Cleaning data...')
-    df = clean_data(df)
+        print('Loading data...\n    MESSAGES: {}\n    CATEGORIES: {}'
+              .format(messages_filepath, categories_filepath))
+        df = load_data(messages_filepath, categories_filepath)
 
-    print('Saving data...\n    DATABASE: {}'.format(database_filepath))
-    save_data(df, database_filepath)
+        print('Cleaning data...')
+        df = clean_data(df)
 
-    print('Cleaned data saved to database!')
-    
+        print('Saving data...\n    DATABASE: {}'.format(database_filepath))
+        save_data(df, database_filepath)
+
+        print('Cleaned data saved to database!')
+
+    else:
+        print('Please provide the filepaths of the messages and categories ' \
+              'datasets as the first and second argument respectively, as ' \
+              'well as the filepath of the database to save the cleaned data ' \
+              'to as the third argument. \n\nExample: python process_data.py ' \
+              'disaster_messages.csv disaster_categories.csv ' \
+              'DisasterResponse.db')
 
 
 if __name__ == '__main__':
