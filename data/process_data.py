@@ -36,6 +36,11 @@ def load_data(messages_filepath, categories_filepath):
     df.drop(columns=['categories'], inplace=True)
     df = pd.concat([df, categories], axis=1)
 
+    # Column related doesn't consist of only 0 and 1 values. Should replace the 2 value
+    modeRelated = df['related'].mode().values[0]
+    df['related'] = df['related'].replace('2', modeRelated)
+
+
     return df
 
 
